@@ -1,0 +1,4 @@
+(test
+ (name qcheck_ms_queue)
+ (libraries multicamlDS qcheck qcheck-alcotest)
+ (modules qcheck_ms_queue))
