@@ -1,0 +1,88 @@
+type 'a node = {
+  value : int;
+  next : 'a node option Atomic.t;
+  lock : Mutex.t;
+}
+
+type 'a t = { head : 'a node }
+
+let create_node value nextptr =
+  { value; next = Atomic.make nextptr; lock = Mutex.create () }
+
+let create () = { head = create_node Int.min_int None }
+
+(* find the previous node to lock to perform operation *)
+let find_previous t key =
+  let rec aux prev next =
+    match next with
+    | Some node when node.value >= key -> prev
+    | Some node -> aux node (Atomic.get node.next)
+    | None -> prev
+  in
+  aux t.head (Atomic.get t.head.next)
+
+(* add new node in correct position *)
+let add t value =
+  let insert x =
+    if x.value = value then (
+      Mutex.unlock x.lock;
+      false)
+    else
+      let new_node = create_node value (Atomic.get x.next) in
+      Atomic.set x.next (Some new_node);
+      Mutex.unlock x.lock;
+      true
+  in
+  (* check if prev and cur are still in same position *)
+  let rec validate prev cur =
+    Mutex.lock prev.lock;
+    let verify = find_previous t value in
+    match Atomic.get verify.next with
+    | Some node when Some node = cur -> insert prev
+    | None when cur = None -> insert prev
+    | _ ->
+        Mutex.unlock prev.lock;
+        let again = find_previous t value in
+        validate again (Atomic.get again.next)
+  in
+  let start = find_previous t value in
+  validate start (Atomic.get start.next)
+
+(* remove node from correct position *)
+let remove t value =
+  let erase x y =
+    if y.value <> value then (
+      Mutex.unlock x.lock;
+      Mutex.unlock y.lock;
+      false)
+    else (
+      Atomic.set x.next (Atomic.get y.next);
+      Mutex.unlock x.lock;
+      Mutex.unlock y.lock;
+      true)
+  in
+  (* check if prev and cur are still in same position *)
+  let rec validate prev cur =
+    Mutex.lock prev.lock;
+    let to_remove =
+      match cur with Some node -> node | _ -> create_node 0 None
+    in
+    Mutex.lock to_remove.lock;
+    let verify = find_previous t value in
+    match Atomic.get verify.next with
+    | Some node when Some node = cur -> erase prev to_remove
+    | None when cur = None -> erase prev to_remove
+    | _ ->
+        Mutex.unlock prev.lock;
+        Mutex.unlock to_remove.lock;
+        let again = find_previous t value in
+        validate again (Atomic.get again.next)
+  in
+  let start = find_previous t value in
+  validate start (Atomic.get start.next)
+
+let is_empty t =
+  Mutex.lock t.head.lock;
+  let empty = Atomic.get t.head.next = None in
+  Mutex.unlock t.head.lock;
+  empty

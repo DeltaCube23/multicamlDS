@@ -1,0 +1,4 @@
+(test
+ (name qcheck_fine_list)
+ (libraries multicamlDS qcheck qcheck-alcotest)
+ (modules qcheck_fine_list))

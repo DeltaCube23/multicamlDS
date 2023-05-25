@@ -27,7 +27,7 @@ let init () =
     not_empty = Condition.create ();
     not_full = Condition.create ();
     size = Atomic.make 0;
-    capacity = 5_000_000;
+    capacity = Int.max_int;
   }
 
 (* push element to tail of queue *)
