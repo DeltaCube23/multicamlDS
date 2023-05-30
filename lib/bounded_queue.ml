@@ -27,7 +27,7 @@ let init () =
     not_empty = Condition.create ();
     not_full = Condition.create ();
     size = Atomic.make 0;
-    capacity = Int.max_int;
+    capacity = 1_000_000;
   }
 
 (* push element to tail of queue *)
@@ -40,14 +40,15 @@ let push t value =
     Condition.wait t.not_full t.tail_lock
   done;
   (* Check if queue is empty before this insertion *)
-  let empty = Atomic.fetch_and_add t.size 1 = 0 in
   Atomic.set t.tail new_node;
   t.tail <- new_tail;
+  let empty = Atomic.fetch_and_add t.size 1 = 0 in
   Mutex.unlock t.tail_lock;
   (* If it was empty then signal the waiting pop threads to wake up *)
-  Mutex.lock t.head_lock;
-  if empty then Condition.broadcast t.not_empty;
-  Mutex.unlock t.head_lock
+  if empty then (
+    Mutex.lock t.head_lock;
+    Condition.broadcast t.not_empty;
+    Mutex.unlock t.head_lock)
 
 (* pop element from head of queue *)
 let pop t =
@@ -57,7 +58,6 @@ let pop t =
     Condition.wait t.not_empty t.head_lock
   done;
   (* Check if queue is full before this deletion *)
-  let full = Atomic.fetch_and_add t.size (-1) = t.capacity in
   let popped =
     match Atomic.get t.head with
     | Nil -> assert false
@@ -65,11 +65,13 @@ let pop t =
         t.head <- next;
         value
   in
+  let full = Atomic.fetch_and_add t.size (-1) = t.capacity in
   Mutex.unlock t.head_lock;
   (* It it was full then signal the waiting push threads to wake up *)
-  Mutex.lock t.tail_lock;
-  if full then Condition.broadcast t.not_full;
-  Mutex.unlock t.tail_lock;
+  if full then (
+    Mutex.lock t.tail_lock;
+    Condition.broadcast t.not_full;
+    Mutex.unlock t.tail_lock);
   popped
 
 (* check if q is empty if the node head is pointing to is Nil *)

@@ -79,7 +79,9 @@ let remove t value =
           incr is_tail;
           create_node value None
     in
-    if !is_tail = 1 then ( Mutex.unlock prev.lock; false)
+    if !is_tail = 1 then (
+      Mutex.unlock prev.lock;
+      false)
     else (
       Mutex.lock to_remove.lock;
       let verify = find_previous_remove t value in
