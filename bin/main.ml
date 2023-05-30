@@ -46,8 +46,38 @@ open MulticamlDS;;
 
    Gc.print_stat stdout *)
 
-let ll = Fine_list.create () in
-let t1 = Fine_list.add ll 0 in
-let t2 = Fine_list.remove ll 0 in
-if t1 then print_endline "success";
-if t2 then print_endline "failure"
+(* seed = 907026367
+let lpush = [-937365509245381732; 356968215213169086; -1417827251707620319; -901233158630615213; 3474625093963640403; -3899889420340277892; -663891703863524430] in 
+let queue = Bounded_queue.init() in 
+let producer =
+  Domain.spawn (fun () -> List.iter (Bounded_queue.push queue) lpush)
+in
+
+(* each iteration will pop 1 element from queue *)
+let count = ref 0 in
+while !count < List.length lpush do
+  incr count;
+  print_int !count;
+  ignore (Bounded_queue.pop queue)
+done;
+
+Domain.join producer;
+
+print_int !count*)
+
+
+let lpush1 = List.init 55 (fun i->i+1) in
+let lpush2 = List.rev lpush1 in
+let llist = Fine_list.create 0 in
+let c1 = ref 0 in
+let c2 = ref 0 in
+let producer1 = 
+  Domain.spawn (fun () -> List.iter (fun ele -> if (Fine_list.add llist ele) then incr c1) lpush1)
+in
+let producer2 = 
+  Domain.spawn (fun () -> List.iter (fun ele -> if (Fine_list.add llist ele) then incr c2) lpush2)
+in
+Domain.join producer1;
+Domain.join producer2;
+
+print_int (!c1 + !c2)

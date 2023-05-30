@@ -60,23 +60,16 @@ let tests_one_consumer_one_producer =
             Domain.spawn (fun () -> List.iter (Bounded_queue.push queue) lpush)
           in
 
-          (* each iteration will pop 1 element from queue, if there is no element
-             pushed yet we will keep looping over till it is not None *)
-          let fifo =
-            List.fold_left
-              (fun acc item ->
-                let popped = ref None in
-                while Option.is_none !popped do
-                  popped := Bounded_queue.pop queue
-                done;
-                acc && item = Option.get !popped) (* acc? *)
-              true lpush
-          in
-          let empty = Bounded_queue.is_empty queue in
+          (* each iteration will pop 1 element from queue *)
+          let count = ref 0 in
+          while !count < List.length lpush do
+            incr count;
+            ignore (Bounded_queue.pop queue)
+          done;
 
           (* Ensure nothing is left behind. *)
           Domain.join producer;
-          fifo && empty);
+          !count = List.length lpush);
     ]
 
 let tests_two_domains =

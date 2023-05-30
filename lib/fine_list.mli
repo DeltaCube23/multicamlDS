@@ -1,6 +1,14 @@
 type 'a t
+(** type of fine-grained linked list based on optimistic locking *)
 
-val create : unit -> 'a t
-val add : 'a t -> int -> bool
-val remove : 'a t -> int -> bool
+val create : 'a -> 'a t
+(** new linked list with dummy head *)
+
+val add : 'a t -> 'a -> bool
+(** [list q key] to add a new node to the linkedlist if it already does not exist *)
+
+val remove : 'a t -> 'a -> bool
+(** [list q key] to remove a node from the linkedlist if it exists *)
+
 val is_empty : 'a t -> bool
+(** check if [list] is empty or not *)
