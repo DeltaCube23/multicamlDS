@@ -1,4 +1,3 @@
-(executable
- (public_name multicamlDS)
- (name main)
+(executables
+ (names main bq)
  (libraries multicamlDS unix))
