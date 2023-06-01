@@ -3,18 +3,18 @@
   structure queue t fHead: pointer to node t, Tail: pointer to node t, H lock: lock type, T lock: lock type
 *)
 
-type 'a node = Nil | Next of 'a option * 'a node Atomic.t
+type 'a node = Nil | Next of 'a option * 'a node ref
 
 type 'a t = {
-  mutable head : 'a node Atomic.t;
-  mutable tail : 'a node Atomic.t;
+  mutable head : 'a node ref;
+  mutable tail : 'a node ref;
   head_lock : Mutex.t;
   tail_lock : Mutex.t;
 }
 
 (* create and initialize the 2 lock queue *)
 let init () =
-  let dummy = Atomic.make Nil in
+  let dummy = ref Nil in
   {
     head = dummy;
     tail = dummy;
@@ -24,10 +24,10 @@ let init () =
 
 (* push value to the tail of queue *)
 let push t value =
-  let new_tail = Atomic.make Nil in
+  let new_tail = ref Nil in
   let new_node = Next (Some value, new_tail) in
   Mutex.lock t.tail_lock;
-  Atomic.set t.tail new_node;
+  t.tail := new_node;
   t.tail <- new_tail;
   Mutex.unlock t.tail_lock
 
@@ -35,7 +35,7 @@ let push t value =
 let pop t =
   Mutex.lock t.head_lock;
   let popped =
-    match Atomic.get t.head with
+    match !(t.head) with
     | Nil -> None
     | Next (value, next) ->
         t.head <- next;
@@ -47,7 +47,7 @@ let pop t =
 (* check if q is empty if the node head is pointing to is Nil *)
 let is_empty t =
   Mutex.lock t.head_lock;
-  let empty = Atomic.get t.head = Nil in
+  let empty = !(t.head) = Nil in
   Mutex.unlock t.head_lock;
   empty
 
@@ -55,7 +55,7 @@ let is_empty t =
 let peek t =
   Mutex.lock t.head_lock;
   let top =
-    match Atomic.get t.head with Nil -> None | Next (value, _) -> value
+    match !(t.head) with Nil -> None | Next (value, _) -> value
   in
   Mutex.unlock t.head_lock;
   top
