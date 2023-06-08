@@ -35,27 +35,23 @@ module FLConf = struct
   (* next stage after performing operation on current state *)
   let next_state c s =
     match c with
-    | Add i -> (
-      let rec sortlist l e =
-        match l with
-        | [] -> [e]
-        | x::ys ->
-          if e = x then x::ys 
-          else if e < x then e::x::ys
-          else x::(sortlist ys e)
-        in 
-      sortlist s i
-    )
-    | Remove i -> ( 
-      let rec sortlist l e =
-        match l with
-        | [] -> []
-        | x::ys -> 
-          if e = x then ys
-          else x::(sortlist ys e)
-        in 
-      sortlist s i
-    )
+    | Add i ->
+        let rec sortlist l e =
+          match l with
+          | [] -> [ e ]
+          | x :: ys ->
+              if e = x then x :: ys
+              else if e < x then e :: x :: ys
+              else x :: sortlist ys e
+        in
+        sortlist s i
+    | Remove i ->
+        let rec sortlist l e =
+          match l with
+          | [] -> []
+          | x :: ys -> if e = x then ys else x :: sortlist ys e
+        in
+        sortlist s i
     | Is_empty -> s
 
   let precond _ _ = true
@@ -69,7 +65,7 @@ module FLConf = struct
   let postcond c (s : state) res =
     match (c, res) with
     | Add ele, Res ((Bool, _), res) -> res = not (List.mem ele s)
-    | Remove ele, Res ((Bool, _), res) -> res = (List.mem ele s)
+    | Remove ele, Res ((Bool, _), res) -> res = List.mem ele s
     | Is_empty, Res ((Bool, _), res) -> res = (s = [])
     | _, _ -> false
 end

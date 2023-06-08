@@ -1,0 +1,4 @@
+(test
+ (name qcheck_priority_queue)
+ (libraries multicamlDS qcheck qcheck-alcotest)
+ (modules qcheck_priority_queue))

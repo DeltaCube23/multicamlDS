@@ -54,8 +54,6 @@ let is_empty t =
 (* return element at head of queue *)
 let peek t =
   Mutex.lock t.head_lock;
-  let top =
-    match !(t.head) with Nil -> None | Next (value, _) -> value
-  in
+  let top = match !(t.head) with Nil -> None | Next (value, _) -> value in
   Mutex.unlock t.head_lock;
   top
