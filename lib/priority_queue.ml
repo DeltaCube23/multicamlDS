@@ -10,7 +10,7 @@ type 'a t = {
   heap : 'a node array;
   fine_lock : Mutex.t array;
   capacity : int;
-  next : Brc.t;
+  next : int ref;
 }
 
 let create_node it k = { status = 0; owner = None; key = k; item = it }
@@ -21,19 +21,20 @@ let create num def_it =
     heap = Array.init num (fun _ -> create_node def_it 42);
     fine_lock = Array.init num (fun _ -> Mutex.create ());
     capacity = num;
-    next = Brc.create ();
+    next = ref 1;
   }
 
 (* add node to the first empty slot and then traverse up to reach correct position *)
 let add t item key =
   Mutex.lock t.heap_lock;
-  let idx = Brc.increment t.next in
+  let idx = !(t.next) in
   match idx with
   | x when x = t.capacity ->
     Mutex.unlock t.heap_lock;
     Domain.cpu_relax ()
   | x ->
     let child = ref x in
+    incr t.next;
     Mutex.lock t.fine_lock.(!child);
     t.heap.(!child) <- create_node item key;
     t.heap.(!child).status <- 2;
@@ -79,14 +80,14 @@ let add t item key =
 (* delete root node and swap with last node, then traverse down to reach correct position *)
 let remove_min t =
   Mutex.lock t.heap_lock;
-  let bottom = Brc.get_idx t.next in
+  decr t.next;
+  let bottom = !(t.next) in
   match bottom with
   | 0 -> (* return dummy node 42 for timebeing to pass STM tests, check if queue not empty before calling *) 
     Mutex.unlock t.heap_lock; 
     t.heap.(0).item
   | 1 ->
       (* Printf.printf "=1 case \n%!"; *)
-      ignore @@ Brc.decrement t.next;
       Mutex.lock t.fine_lock.(1);
       Mutex.unlock t.heap_lock;
       let it = t.heap.(1).item in
@@ -96,7 +97,6 @@ let remove_min t =
       it
   | _ ->
       (* Printf.printf ">1 case \n%!"; *)
-      ignore @@ Brc.decrement t.next;
       Mutex.lock t.fine_lock.(bottom);
       Mutex.lock t.fine_lock.(1);
       Mutex.unlock t.heap_lock;
@@ -147,12 +147,12 @@ let remove_min t =
 
 let is_empty t =
   Mutex.lock t.heap_lock;
-  let res = (Brc.get_size t.next) = 0 in
+  let res = !(t.next) = 1 in
   Mutex.unlock t.heap_lock;
   res
 
 let get_len t =
   Mutex.lock t.heap_lock;
-  let res = Brc.get_size t.next in
+  let res = !(t.next) in
   Mutex.unlock t.heap_lock;
-  res
+  res - 1
