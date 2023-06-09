@@ -4,21 +4,21 @@ let tests_sequential =
   QCheck.
     [
       (* TEST 1: push *)
-      Test.make ~count:100 ~name:"push" (list small_nat) (fun lpush ->
-          assume (lpush <> []);
+      Test.make ~count:100 ~name:"push" small_nat (fun len ->
+          assume (len <> 0);
           (* Building a random queue *)
-          let len = List.length lpush in
-          let queue = Priority_queue.create (len + 1) 42 in
+          let lpush = List.init len (fun i -> i) in
+          let queue = Priority_queue.create 10_000 42 in
           List.iter (Priority_queue.add queue 42) lpush;
 
           (* Testing property *)
           not (Priority_queue.is_empty queue));
       (* TEST 2 - push, pop until empty *)
-      Test.make ~count:100 ~name:"push_pop_until_empty" (list small_nat) (fun lpush ->
-          assume (lpush <> []);
+      Test.make ~count:100 ~name:"push_pop_until_empty" small_nat (fun len ->
+          assume (len <> 0);
           (* Building a random queue *)
-          let len = List.length lpush in
-          let queue = Priority_queue.create (len + 1) 42 in
+          let lpush = List.init len (fun i -> i) in
+          let queue = Priority_queue.create 10_000 42 in
           List.iter (Priority_queue.add queue 42) lpush;
 
           (* Popping until [is_empty q] is true *)
@@ -35,7 +35,7 @@ let tests_sequential =
           assume (len <> 0);
           (* Building a random queue *)
           let lpush = List.init len (fun i -> i) in
-          let queue = Priority_queue.create (len + 1) 42 in
+          let queue = Priority_queue.create 10_000 42 in
           List.iter (fun ele -> Priority_queue.add queue ele ele) lpush;
 
           (* Popping until [is_empty q] is true *)
@@ -50,12 +50,12 @@ let tests_sequential =
           (* Testing property *)
           Priority_queue.is_empty queue && !out = List.rev lpush);
       (* TEST 4 - push, pop check order random *)
-      Test.make ~count:100 ~name:"push_pop_check_order_random" (list small_nat)
-        (fun lpush ->
-          assume (lpush <> []);
+      Test.make ~count:100 ~name:"push_pop_check_order_random" small_nat
+        (fun len ->
+          assume (len <> 0);
           (* Building a random queue *)
-          let len = List.length lpush in
-          let queue = Priority_queue.create (len + 1) 42 in
+          let lpush = List.init len (fun _ -> Random.int 10_000) in
+          let queue = Priority_queue.create 10_000 42 in
           List.iter (fun ele -> Priority_queue.add queue ele ele) lpush;
 
           (* Popping until [is_empty q] is true *)
@@ -84,7 +84,7 @@ let tests_two_domains =
           (* Creating a queue *)
           let lpush1 = List.init len (fun i -> i) in
           let lpush2 = List.init len (fun i -> i + len) in
-          let queue = Priority_queue.create 30_000 42 in
+          let queue = Priority_queue.create 50_000 42 in
 
           let producer1 =
             Domain.spawn (fun () ->
@@ -107,7 +107,7 @@ let tests_two_domains =
           (* Creating a queue *)
           let lpush1 = List.init len (fun i -> i) in
           let lpush2 = List.init len (fun i -> i + len) in
-          let queue = Priority_queue.create 30_000 42 in
+          let queue = Priority_queue.create 50_000 42 in
 
           let producer1 =
             Domain.spawn (fun () ->
@@ -138,7 +138,7 @@ let tests_two_domains =
           (* Creating a queue *)
           let lpush1 = List.init len (fun i -> i) in
           let lpush2 = List.init len (fun i -> i + len) in
-          let queue = Priority_queue.create 30_000 42 in
+          let queue = Priority_queue.create 50_000 42 in
           List.iter (fun ele -> Priority_queue.add queue ele ele) lpush1;
           let producer1 =
             Domain.spawn (fun () ->
@@ -165,7 +165,7 @@ let tests_two_domains =
           let plen = len * 2 in
           (* Creating a queue *)
           let lpush1 = List.init plen (fun _ -> Random.int 20_000) in
-          let queue = Priority_queue.create 30_000 42 in
+          let queue = Priority_queue.create 50_000 42 in
           List.iter (fun ele -> Priority_queue.add queue ele ele) lpush1;
 
           let c1 = ref 0 in
