@@ -29,17 +29,20 @@ let add t item key =
   Mutex.lock t.heap_lock;
   let idx = Brc.increment t.next in
   match idx with
-  | x when x = t.capacity ->
+  | x when x = t.capacity -> (* reached full capacity *)
     Mutex.unlock t.heap_lock;
     Domain.cpu_relax ()
   | x ->
     let child = ref x in
+    (* insert new node into empty slot *)
     Mutex.lock t.fine_lock.(!child);
     t.heap.(!child) <- create_node item key;
     t.heap.(!child).status <- 2;
-    t.heap.(!child).owner <- Some (Domain.self ());
+    let dom_id = Some (Domain.self ()) in
+    t.heap.(!child).owner <- dom_id;
     Mutex.unlock t.heap_lock;
     Mutex.unlock t.fine_lock.(!child);
+    (* move up to correct priority position *)
     while !child > 1 do
       let par = !child / 2 in
       Mutex.lock t.fine_lock.(par);
@@ -49,20 +52,20 @@ let add t item key =
       let child_node = t.heap.(!child) in
       if
         par_node.status = 1 && child_node.status = 2
-        && child_node.owner = Some (Domain.self ())
+        && child_node.owner = dom_id
       then
-        if child_node.key < par_node.key then (
+        if child_node.key < par_node.key then ( (* swap if lesser *)
           t.heap.(par) <- child_node;
           t.heap.(!child) <- par_node;
           child := par)
-        else (
+        else ( (* it is in right position *)
           child_node.status <- 1;
           child_node.owner <- None; 
           child := 0 (* to simulate early return *))
       else if
-        not (child_node.status = 2 && child_node.owner = Some (Domain.self ()) )
+        not (child_node.status = 2 && child_node.owner = dom_id ) (* has been moved up because of a remove move down swap *)
       then child := par
-      else if par_node.status = 0 then child := 0;
+      else if par_node.status = 0 then child := 0;(* if parent is empty then this node has been moved up by a remove operation *)
       Mutex.unlock t.fine_lock.(oldchild);
       Mutex.unlock t.fine_lock.(par);
       if !child = oldchild then Domain.cpu_relax ();
@@ -71,7 +74,7 @@ let add t item key =
     if !child = 1 then (
       Mutex.lock t.fine_lock.(1);
       let root = t.heap.(1) in
-      if root.status = 2 && root.owner = Some (Domain.self ()) then (
+      if root.status = 2 && root.owner = dom_id then (
         root.status <- 1;
         root.owner <- None );
       Mutex.unlock t.fine_lock.(1))
