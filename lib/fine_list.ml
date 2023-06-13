@@ -48,6 +48,7 @@ let add t value =
     | None when cur = None && prev = verify -> insert prev
     | _ ->
         Mutex.unlock prev.lock;
+        Domain.cpu_relax ();
         let again = find_previous_add t value in
         validate again again.next
   in
@@ -91,6 +92,7 @@ let remove t value =
       | _ ->
           Mutex.unlock prev.lock;
           Mutex.unlock to_remove.lock;
+          Domain.cpu_relax ();
           let again = find_previous_remove t value in
           validate again again.next)
   in

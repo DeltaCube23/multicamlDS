@@ -36,16 +36,15 @@ module PQConf = struct
   let next_state c s =
     match c with
     | Add i ->
-      let rec sortlist l e =
-        match l with
-        | [] -> [ e ]
-        | x :: ys when List.length l < 100_000 ->
-          if e <= x then e :: x :: ys
-          else x :: sortlist ys e
-        | x :: ys -> x :: ys
-      in
-      sortlist s i
-    | Remove_min -> (match s with [] -> s | _ :: s' -> s')
+        let rec sortlist l e =
+          match l with
+          | [] -> [ e ]
+          | x :: ys when List.length l < 100_000 ->
+              if e <= x then e :: x :: ys else x :: sortlist ys e
+          | x :: ys -> x :: ys
+        in
+        sortlist s i
+    | Remove_min -> ( match s with [] -> s | _ :: s' -> s')
     | Is_empty -> s
 
   let precond _ _ = true
@@ -59,7 +58,8 @@ module PQConf = struct
   let postcond c (s : state) res =
     match (c, res) with
     | Add _, Res ((Unit, _), _) -> true
-    | Remove_min, Res ((Int, _), res) -> (match s with [] -> res = 42 | x :: _ -> res = x)
+    | Remove_min, Res ((Int, _), res) -> (
+        match s with [] -> res = 42 | x :: _ -> res = x)
     | Is_empty, Res ((Bool, _), res) -> res = (s = [])
     | _, _ -> false
 end
