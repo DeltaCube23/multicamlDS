@@ -4,9 +4,9 @@ type 'a node
 
 val create : 'a -> 'a t
 
-val insert_after : 'a node -> 'a node -> bool
+val insert_after : 'a node -> 'a -> bool
 
-val insert_before : 'a node -> 'a node -> bool
+val insert_before : 'a node -> 'a -> bool
 
 val delete : 'a node -> bool
 
