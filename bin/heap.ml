@@ -8,7 +8,7 @@ module H = Binary_heap.Make (E)
 
 let dummy = 1729
 let bound = 30_000_000
-let ops = 5_000
+let ops = 10_000
 
 let () =
   Random.self_init ();
@@ -16,7 +16,7 @@ let () =
   for _ = 1 to 4 do
     let h = H.create ~dummy 5_000_000 in
     let glock = Mutex.create () in
-    for _ = 1 to 100_000 do
+    for _ = 1 to 10_000 do
       let x = Random.int bound in
       H.add h x
     done;

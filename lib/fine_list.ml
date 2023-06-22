@@ -30,7 +30,7 @@ let find_previous_remove t key =
 let add t value =
   (* x will point to the new node after insertion *)
   let insert x =
-    if x.value = value && x <> t.head then (
+    if x.value = value && not (x == t.head) then (
       Mutex.unlock x.lock;
       false)
     else
@@ -43,12 +43,13 @@ let add t value =
   let rec validate prev cur =
     Mutex.lock prev.lock;
     let verify = find_previous_add t value in
-    match verify.next with
-    | Some node when Some node = cur && prev = verify -> insert prev
-    | None when cur = None && prev = verify -> insert prev
+    let temp = verify.next in
+    match temp with
+    | Some _ when temp == cur && prev == verify -> insert prev
+    | None when cur = None && prev == verify -> insert prev
     | _ ->
         Mutex.unlock prev.lock;
-        Domain.cpu_relax ();
+        (*Domain.cpu_relax ();*)
         let again = find_previous_add t value in
         validate again again.next
   in
@@ -86,13 +87,14 @@ let remove t value =
     else (
       Mutex.lock to_remove.lock;
       let verify = find_previous_remove t value in
-      match verify.next with
-      | Some node when Some node = cur && prev = verify -> erase prev to_remove
-      | None when cur = None && prev = verify -> erase prev to_remove
+      let temp = verify.next in
+      match temp with
+      | Some _ when temp == cur && prev == verify -> erase prev to_remove
+      | None when cur = None && prev == verify -> erase prev to_remove
       | _ ->
           Mutex.unlock prev.lock;
           Mutex.unlock to_remove.lock;
-          Domain.cpu_relax ();
+          (* Domain.cpu_relax (); *)
           let again = find_previous_remove t value in
           validate again again.next)
   in

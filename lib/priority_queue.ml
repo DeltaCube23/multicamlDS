@@ -11,6 +11,7 @@ type 'a t = {
   fine_lock : Mutex.t array;
   capacity : int;
   next : Brc.t;
+  busy : int Atomic.t;
 }
 
 let create_node it k = { status = 0; owner = None; key = k; item = it }
@@ -22,6 +23,7 @@ let create num def_it =
     fine_lock = Array.init num (fun _ -> Mutex.create ());
     capacity = num;
     next = Brc.create ();
+    busy = Atomic.make 0;
   }
 
 (* add node to the first empty slot and then traverse up to reach correct position *)
@@ -73,7 +75,7 @@ let add t item key =
         (* if parent is empty then this node has been moved up by a remove operation *)
         Mutex.unlock t.fine_lock.(oldchild);
         Mutex.unlock t.fine_lock.(par);
-        if !child = oldchild then Domain.cpu_relax ()
+        if !child = oldchild then (*Domain.cpu_relax ()*) Atomic.incr t.busy
       done;
 
       if !child = 1 then (
@@ -168,3 +170,6 @@ let get_len t =
   let res = Brc.get_size t.next in
   Mutex.unlock t.heap_lock;
   res
+
+let get_repeat t = 
+  Atomic.get t.busy

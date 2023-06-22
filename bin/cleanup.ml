@@ -1,19 +1,32 @@
-open MulticamlDS;;
-let lpush = [1;2;3;4] in
-let queue = Priority_queue.create 10_000 42 in
-List.iter (fun ele -> Priority_queue.add queue ele ele) lpush;
+open MulticamlDS.Priority_queue
 
-(* Popping until [is_empty q] is true *)
-let out = ref [] in
-let insert v = out := v :: !out in
-let count = ref 0 in
-while !count < 4 do
-  incr count;
-  insert (Priority_queue.remove_min queue);
-done;
+let test ninit nd nt =
+  let barrier = Atomic.make nd in
+  let max = (ninit + (nd * nt))*2 in
+  let pq = create max 0 in
+  for i = 0 to ninit - 1 do
+    add pq i i
+  done;
 
-(* Testing property *)
-if (Priority_queue.is_empty queue && List.rev lpush = !out) then print_endline "yes"
-else print_endline "no"
+  let work _i =
+    Atomic.decr barrier;
+    while Atomic.get barrier <> 0 do
+      Domain.cpu_relax ()
+    done;
 
-open MulticamlDS;;
+    for _i = 0 to nt - 1 do
+      let i = Random.int (max*2) in
+      add pq i i
+    done
+  in
+
+  let t1 = Unix.gettimeofday () in
+  let domains = Array.init nd (fun i -> Domain.spawn (fun () -> work i)) in
+  Array.iter Domain.join domains;
+  let t2 = Unix.gettimeofday () in
+  t2 -. t1
+
+let _ =
+  Random.self_init ();
+  let time = test 1_000_00 2 100_000 in
+  Format.printf "Result : %f@." time

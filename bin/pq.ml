@@ -2,9 +2,9 @@ open MulticamlDS;;
 Random.self_init ();
 let temp = ref 0 in
 for _ = 1 to 4 do
-  let len = 5_000 in
+  let len = 10_000 in
   let bound = 30_000_000 in
-  let base = 100_000 in
+  let base = 10_000 in
   temp := (!temp + 2);
   let num_domains = !temp in
   let queue = Priority_queue.create 5_000_000 42 in
@@ -34,7 +34,7 @@ for _ = 1 to 4 do
 
   let end_time = Unix.gettimeofday () in
   Format.printf "Completed in %f\n" (end_time -. start_time);
-  (*Format.printf "%d ops\n" !tt_cntr;*)
+  Format.printf "repeated in %d\n" (Priority_queue.get_repeat queue);
   (* Testing property *)
   if Priority_queue.get_len queue = (base + num_domains * len) then print_endline "success"
   else print_endline "failure"
