@@ -2,11 +2,11 @@ open MulticamlDS;;
 
 Random.self_init ();
 for num_domains = 1 to 8 do
-  let len = 10_000/num_domains in (*amount of work by each domain*)
+  let len = 20_000/num_domains in (*amount of work by each domain*)
 
   let glock = Mutex.create () in
   let list = Basic_list.create 42 in
-  for _ = 1 to 1_000 do
+  for _ = 1 to 10_000 do
     let relt = Random.int 30_000_000 in
     ignore @@ Basic_list.add list relt
   done;
