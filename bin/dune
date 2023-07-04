@@ -1,3 +1,16 @@
 (executables
- (names main bq lockfree_msq pq brcplay heap cleanup blist flist del trial)
+ (names
+  main
+  bq
+  lockfree_msq
+  pq
+  brcplay
+  heap
+  cleanup
+  blist
+  flist
+  del
+  trial
+  skip
+  simple_heap)
  (libraries multicamlDS unix lockfree bheap))

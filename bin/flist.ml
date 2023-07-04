@@ -24,5 +24,6 @@ for num_domains = 1 to 8 do
   done;
 
   let end_time = Unix.gettimeofday () in
-  Format.printf "Completed %d domains in %f\n" num_domains (end_time -. start_time)
+  Format.printf "Completed %d domains in %f\n" num_domains
+    (end_time -. start_time)
 done

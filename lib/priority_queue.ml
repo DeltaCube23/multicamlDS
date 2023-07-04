@@ -11,8 +11,8 @@ type 'a t = {
   fine_lock : Mutex.t array;
   capacity : int;
   next : Brc.t;
-  (*next : int ref;
-  idx_list : int array;*)
+      (*next : int ref;
+        idx_list : int array;*)
 }
 
 let create_node it k = { status = 0; owner = None; key = k; item = it }
@@ -25,12 +25,12 @@ let create num def_it =
     capacity = num;
     next = Brc.create ();
     (*next = ref 0;
-    idx_list = Array.init 1_000_001 (fun i -> i);*)
+      idx_list = Array.init 1_000_001 (fun i -> i);*)
   }
 
-(*let fillup t = 
-  for i = 1 to 1_000_000 do 
-    t.idx_list.(i) <- Brc.increment t.bnext 
+(*let fillup t =
+  for i = 1 to 1_000_000 do
+    t.idx_list.(i) <- Brc.increment t.bnext
   done*)
 
 (* add node to the first empty slot and then traverse up to reach correct position *)
@@ -38,12 +38,12 @@ let add t item key =
   Mutex.lock t.heap_lock;
   let idx = Brc.increment t.next in
   (*incr t.next;
-  let idx = t.idx_list.(!(t.next)) in*)
+    let idx = t.idx_list.(!(t.next)) in*)
   match idx with
   | x when x = t.capacity ->
       (* reached full capacity *)
       Mutex.unlock t.heap_lock;
-      Domain.cpu_relax ();
+      Domain.cpu_relax ()
   | x ->
       let child = ref x in
       (* insert new node into empty slot *)
@@ -86,7 +86,7 @@ let add t item key =
         (* if parent is empty then this node has been moved up by a remove operation *)
         Mutex.unlock t.fine_lock.(oldchild);
         Mutex.unlock t.fine_lock.(par);
-        if !child = oldchild then (*print_endline "danger";*) Backoff.once b;
+        if !child = oldchild then (*print_endline "danger";*) Backoff.once b
       done;
 
       if !child = 1 then (
@@ -96,7 +96,7 @@ let add t item key =
           root.status <- 1;
           root.owner <- None);
         Mutex.unlock t.fine_lock.(1))
-      (*!total_swaps*)
+(*!total_swaps*)
 
 (* delete root node and swap with last node, then traverse down to reach correct position *)
 let remove_min t =
@@ -138,17 +138,17 @@ let remove_min t =
       Mutex.unlock t.fine_lock.(bottom);
       (* --- 2nd method --- *)
       (*Mutex.lock t.fine_lock.(bottom);
-      Mutex.unlock t.heap_lock;
-      t.heap.(bottom).status <- 0;
-      t.heap.(bottom).owner <- None;
-      let temp_k = t.heap.(bottom).key in
-      let temp_it = t.heap.(bottom).item in 
-      Mutex.unlock t.fine_lock.(bottom);
-      Mutex.lock t.fine_lock.(1);
-      let it = t.heap.(1).item in
-      t.heap.(1) <- create_node temp_it temp_k;
-      t.heap.(1).status <- 1;
-      t.heap.(1).owner <- None;*)
+        Mutex.unlock t.heap_lock;
+        t.heap.(bottom).status <- 0;
+        t.heap.(bottom).owner <- None;
+        let temp_k = t.heap.(bottom).key in
+        let temp_it = t.heap.(bottom).item in
+        Mutex.unlock t.fine_lock.(bottom);
+        Mutex.lock t.fine_lock.(1);
+        let it = t.heap.(1).item in
+        t.heap.(1) <- create_node temp_it temp_k;
+        t.heap.(1).status <- 1;
+        t.heap.(1).owner <- None;*)
       let child = ref 0 in
       let par = ref 1 in
       let break = ref false in

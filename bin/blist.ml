@@ -2,8 +2,9 @@ open MulticamlDS;;
 
 Random.self_init ();
 for num_domains = 1 to 8 do
-  let len = 20_000/num_domains in (*amount of work by each domain*)
+  let len = 20_000 / num_domains in
 
+  (*amount of work by each domain*)
   let glock = Mutex.create () in
   let list = Basic_list.create 42 in
   for _ = 1 to 10_000 do
@@ -28,5 +29,6 @@ for num_domains = 1 to 8 do
   done;
 
   let end_time = Unix.gettimeofday () in
-  Format.printf "Completed %d domains in %f\n" num_domains (end_time -. start_time)
+  Format.printf "Completed %d domains in %f\n" num_domains
+    (end_time -. start_time)
 done

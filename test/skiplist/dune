@@ -1,0 +1,9 @@
+(test
+ (name qcheck_skiplist)
+ (libraries multicamlDS qcheck qcheck-alcotest)
+ (modules qcheck_skiplist))
+
+(test
+ (name runner)
+ (libraries multicamlDS qcheck)
+ (modules runner))

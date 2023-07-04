@@ -6,3 +6,5 @@ module Brc = Brc
 module Basic_list = Basic_list
 module Dll = Dll
 module Backoff = Backoff
+module Skiplist = Skiplist
+module Basic_heap = Basic_heap
