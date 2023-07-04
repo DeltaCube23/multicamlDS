@@ -159,11 +159,12 @@ let tests_domains =
           Domain.join d4;
           !c1 + !c2 + !c3 + !c4 = (4 *len));
       (* TEST 4 - Same domain add remove *)
-      (*Test.make ~count:100 ~name:"parallel_add_remove" small_nat (fun len ->
-        assume (len <> 0);
+      Test.make ~count:100 ~name:"parallel_add_remove" small_nat (fun slen ->
+        assume (slen <> 0);
         Random.self_init ();
         (* Creating a queue *)
         let queue = Skiplist.create ~max_height:20 () in
+        let len = Random.int 1000 + slen in 
         let c1 = ref 0 in
         let c2 = ref 0 in
         let c3 = ref 0 in
@@ -212,12 +213,11 @@ let tests_domains =
         Domain.join d2;
         Domain.join d3;
         Domain.join d4;
-        Format.printf "%d\n%!" (!c1 + !c2 + !c3 + !c4);
-        !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0);*)
+        !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0);
     ]
 
 let main () =
-  (*QCheck_base_runner.set_seed 124752466;*)
+  (* QCheck_base_runner.set_seed 124752466; *)
   let to_alcotest = List.map QCheck_alcotest.to_alcotest in
   Alcotest.run "Priority_queue"
     [

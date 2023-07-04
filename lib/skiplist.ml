@@ -220,16 +220,17 @@ let remove sl key =
     let { node = succ; marked = _ } = Atomic.get nodeToRemove.next.(0) in
     update_bottom_level succ
 
-(* find the minimum node on the bottom level and mark it as deleted *)
+(* find the minimum node on the bottom level and mark it as deleted, 
+   important to refetch successor node because something could have changed in between *)
 let find_mark_min sl =
   let rec find_unmarked curr =
-    let { node = succ; marked = _ } = Atomic.get curr.next.(0) in
-    if succ != null_node then
+    let { node = not_tail; marked = _ } = Atomic.get curr.next.(0) in
+    if not_tail != null_node then
       if
         (not (Atomic.get curr.logical_mark))
         && Atomic.compare_and_set curr.logical_mark false true
       then curr.key
-      else find_unmarked succ
+      else  let { node = succ; marked = _ } = Atomic.get curr.next.(0) in find_unmarked succ
     else Int.max_int
   in
   let { node = curr; marked = _ } = Atomic.get sl.head.next.(0) in
