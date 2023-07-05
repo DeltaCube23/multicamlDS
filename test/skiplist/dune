@@ -7,3 +7,8 @@
  (name runner)
  (libraries multicamlDS qcheck)
  (modules runner))
+
+(test
+ (name dscheck_skiplist)
+ (libraries multicamlDS dscheck alcotest)
+ (modules dscheck_skiplist))
