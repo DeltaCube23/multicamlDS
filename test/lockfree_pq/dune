@@ -1,0 +1,12 @@
+(rule
+ (copy ../../lib/lockfree_pq.ml lockfree_pq.ml))
+
+(test
+ (name qcheck_lockfree_pq)
+ (libraries multicamlDS qcheck qcheck-alcotest)
+ (modules qcheck_lockfree_pq))
+
+(test
+ (name dscheck_lockfree_pq)
+ (libraries atomic dscheck alcotest)
+ (modules lockfree_pq dscheck_lockfree_pq))

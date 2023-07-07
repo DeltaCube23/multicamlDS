@@ -1,3 +1,6 @@
+(rule
+ (copy ../../lib/skiplist.ml skiplist.ml))
+
 (test
  (name qcheck_skiplist)
  (libraries multicamlDS qcheck qcheck-alcotest)
@@ -10,5 +13,5 @@
 
 (test
  (name dscheck_skiplist)
- (libraries multicamlDS dscheck alcotest)
- (modules dscheck_skiplist))
+ (libraries atomic dscheck alcotest)
+ (modules skiplist dscheck_skiplist))

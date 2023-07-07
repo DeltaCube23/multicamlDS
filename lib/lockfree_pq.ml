@@ -16,7 +16,7 @@ let null_node =
   {
     key = Int.max_int;
     height = 0;
-    logical_mark = Atomic.make false;
+    logical_mark = Atomic.make true;
     next = [||];
   }
 
@@ -26,7 +26,7 @@ let create_new_node value height =
     Array.init (height + 1) (fun _ ->
         Atomic.make { node = null_node; marked = false })
   in
-  { key = value; height; logical_mark = Atomic.make false; next }
+  { key = value; height; logical_mark = Atomic.make true; next }
 
 (** create_dummy_node_array: Creates a new array with the different node for each index *)
 let create_dummy_node_array sl =
@@ -105,57 +105,57 @@ let find_in (key, preds, succs, sl) =
   in
   update_arrays head sl.max_height
 
+  
+
 (** Adds a new key to the skiplist sl. *)
-let add sl key =
+let push sl key =
   let top_level = get_random_level sl in
   let preds = create_dummy_node_array sl in
   let succs = create_dummy_node_array sl in
   let rec repeat () =
     (* check if key already exists and fill preds and succs *)
-    let found = find_in (key, preds, succs, sl) in
-    if found then false
+    find_in (key, preds, succs, sl) |> ignore;
+    let new_node_next = (* build next array based on succs *)
+      Array.map
+        (fun element ->
+          let mark_ref = { node = element; marked = false } in
+          Atomic.make mark_ref)
+        succs
+    in
+    let new_node =
+      {
+        key;
+        height = top_level;
+        logical_mark = Atomic.make false;
+        next = new_node_next;
+      }
+    in
+    let pred = preds.(0) in
+    let succ = succs.(0) in
+    (* insert at level 0 *)
+    if
+      not
+        (compare_and_set_mark_ref
+          (pred.next.(0), succ, false, new_node, false))
+    then repeat ()
     else
-      let new_node_next = (* build next array based on succs *)
-        Array.map
-          (fun element ->
-            let mark_ref = { node = element; marked = false } in
-            Atomic.make mark_ref)
-          succs
-      in
-      let new_node =
-        {
-          key;
-          height = top_level;
-          logical_mark = Atomic.make false;
-          next = new_node_next;
-        }
-      in
-      let pred = preds.(0) in
-      let succ = succs.(0) in
-      (* insert at level 0 *)
-      if
-        not
-          (compare_and_set_mark_ref
-            (pred.next.(0), succ, false, new_node, false))
-      then repeat ()
-      else
-        let rec update_levels level =
-          let rec set_next () =
-            let pred = preds.(level) in
-            let succ = succs.(level) in
-            if
-              compare_and_set_mark_ref
-                (pred.next.(level), succ, false, new_node, false)
-            then ()
-            else (
-              find_in (key, preds, succs, sl) |> ignore;
-              set_next ())
-          in
-          set_next ();
-          if level < top_level then update_levels (level + 1)
+      let rec update_levels level =
+        let rec set_next () =
+          let pred = preds.(level) in
+          let succ = succs.(level) in
+          if
+            compare_and_set_mark_ref
+              (pred.next.(level), succ, false, new_node, false)
+          then ()
+          else (
+            find_in (key, preds, succs, sl) |> ignore;
+            set_next ())
         in
-        if top_level > 0 then update_levels 1; (* start updating from level 1 and then move upwards *)
-        true
+        set_next ();
+        if level < top_level then update_levels (level + 1)
+      in
+      if top_level > 0 then update_levels 1; (* start updating from level 1 and then move upwards *)
+      ()
   in
   repeat ()
 
@@ -183,14 +183,31 @@ let contains sl key =
   let { node = succ; marked = mark } = Atomic.get curr.next.(sl.max_height) in
   search (pred, curr, succ, mark, sl.max_height)
 
+(* find the minimum node on the bottom level and mark it as deleted, 
+   important to refetch successor node because something could have changed in between *)
+let find_mark_min sl =
+  let rec find_unmarked curr =
+    let { node = not_tail; marked = _ } = Atomic.get curr.next.(0) in
+    if not_tail != null_node then
+      if
+        (not (Atomic.get curr.logical_mark))
+        && Atomic.compare_and_set curr.logical_mark false true
+      then curr
+      else let { node = succ; marked = _ } = Atomic.get curr.next.(0) in find_unmarked succ
+    else null_node
+  in
+  let { node = curr; marked = _ } = Atomic.get sl.head.next.(0) in
+  find_unmarked curr
+
 (** Returns true if the removal was successful and returns false if the key is not present within the skiplist *)
 let remove sl key =
   let preds = create_dummy_node_array sl in
   let succs = create_dummy_node_array sl in
-  let found = find_in (key, preds, succs, sl) in
-  if not found then false
-  else
+  let rec repeat () = 
+    find_in (key, preds, succs, sl) |> ignore;
     let nodeToRemove = succs.(0) in (* expected node to remove based on given key *)
+    if not (Atomic.get nodeToRemove.logical_mark) then false
+    else (
     let nodeHeight = nodeToRemove.height in
     let rec mark_levels succ level =
       (* set node to marked *)
@@ -218,25 +235,24 @@ let remove sl key =
       if iMarkedIt then ( (* update next links to remove marked node in all levels *)
         find_in (key, preds, succs, sl) |> ignore;
         true)
-      else if mark then false (* some other thread deleted *)
+      else if mark then repeat () (* some other thread deleted same key *)
       else update_bottom_level succ  (* retry because some update happened in between *)
     in
     if nodeHeight > 0 then update_upper_levels nodeHeight;
     let { node = succ; marked = _ } = Atomic.get nodeToRemove.next.(0) in
-    update_bottom_level succ
+    update_bottom_level succ )
+  in 
+  repeat ()
 
-(* find the minimum node on the bottom level and mark it as deleted, 
-   important to refetch successor node because something could have changed in between *)
-let find_mark_min sl =
-  let rec find_unmarked curr =
-    let { node = not_tail; marked = _ } = Atomic.get curr.next.(0) in
-    if not_tail != null_node then
-      if
-        (not (Atomic.get curr.logical_mark))
-        && Atomic.compare_and_set curr.logical_mark false true
-      then curr.key
-      else  let { node = succ; marked = _ } = Atomic.get curr.next.(0) in find_unmarked succ
-    else Int.max_int
-  in
-  let { node = curr; marked = _ } = Atomic.get sl.head.next.(0) in
-  find_unmarked curr
+let pop sl = 
+  let num = find_mark_min sl in 
+  if num != null_node then (
+    remove sl num.key |> ignore;
+    num.key
+  )
+  else null_node.key
+
+(* if not logically marked node to remove then 
+insert after equal nodes if logically marked 
+this way physical deletion will always remove the logical one first
+*)

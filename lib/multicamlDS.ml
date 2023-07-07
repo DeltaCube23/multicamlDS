@@ -8,3 +8,4 @@ module Dll = Dll
 module Backoff = Backoff
 module Skiplist = Skiplist
 module Basic_heap = Basic_heap
+module Lockfree_pq = Lockfree_pq
