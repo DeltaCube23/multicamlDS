@@ -126,13 +126,13 @@ let tests_domains =
         let c3 = ref 0 in
         let c4 = ref 0 in
         for _ = 1 to len do
-          let ele = Random.int 100 in 
+          let ele = Random.int 500 in 
           Lockfree_pq.push queue ele |> ignore;
         done;
         let d1 =
           Domain.spawn (fun () ->
               for _ = 1 to len do
-                Lockfree_pq.push queue (Random.int 100);
+                Lockfree_pq.push queue (Random.int 500);
                 incr c1;
                 let num = Lockfree_pq.pop queue in
                 if num <> Int.max_int then decr c1
@@ -141,7 +141,7 @@ let tests_domains =
         let d2 =
           Domain.spawn (fun () ->
               for _ = 1 to len do
-                Lockfree_pq.push queue (Random.int 100);
+                Lockfree_pq.push queue (Random.int 500);
                 incr c2;
                 let num = Lockfree_pq.pop queue in
                 if num <> Int.max_int then decr c2
@@ -150,7 +150,7 @@ let tests_domains =
         let d3 =
           Domain.spawn (fun () ->
               for _ = len downto 1 do
-                Lockfree_pq.push queue (Random.int 100); 
+                Lockfree_pq.push queue (Random.int 500); 
                 incr c3;
                 let num = Lockfree_pq.pop queue in
                 if num <> Int.max_int then decr c3
@@ -159,7 +159,7 @@ let tests_domains =
         let d4 =
           Domain.spawn (fun () ->
               for _ = len downto 1 do
-                Lockfree_pq.push queue (Random.int 100);
+                Lockfree_pq.push queue (Random.int 500);
                 incr c4;
                 let num = Lockfree_pq.pop queue in
                 if num <> Int.max_int then decr c4
