@@ -72,16 +72,16 @@ let remove t value =
   (* check if prev and cur are still in same position after locking *)
   let rec validate prev cur =
     Mutex.lock prev.lock;
-    let is_tail = ref 0 in
+    let is_tail = ref false in
     (* get the node to remove from cur pointer *)
     let to_remove =
       match cur with
       | Some node -> node
       | _ ->
-          incr is_tail;
+          is_tail := true;
           create_node value None
     in
-    if !is_tail = 1 then (
+    if !is_tail then (
       Mutex.unlock prev.lock;
       false)
     else (
@@ -99,6 +99,44 @@ let remove t value =
           validate again again.next)
   in
   let start = find_previous_remove t value in
+  validate start start.next
+
+let contains t value = 
+  let rec validate prev cur = 
+    Mutex.lock prev.lock;
+    let is_tail = ref false in 
+    let to_find = 
+      match cur with 
+      | Some node -> node 
+      | _ ->
+        is_tail := true;
+        create_node value None 
+    in
+    if !is_tail then (
+      Mutex.unlock prev.lock;
+      false)
+    else (
+      Mutex.lock to_find.lock;
+      let verify = find_previous_remove t value in
+      let temp = verify.next in
+      match temp with
+      | Some _ when temp == cur && prev == verify -> 
+        let res = (to_find.value = value) in 
+        Mutex.unlock prev.lock;
+        Mutex.unlock to_find.lock;
+        res
+      | None -> 
+        Mutex.unlock prev.lock; 
+        Mutex.unlock to_find.lock; 
+        false
+      | _ ->
+        Mutex.unlock prev.lock;
+        Mutex.unlock to_find.lock;
+        (* Domain.cpu_relax (); *)
+        let again = find_previous_remove t value in
+        validate again again.next)
+  in
+  let start = find_previous_remove t value in 
   validate start start.next
 
 let is_empty t =

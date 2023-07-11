@@ -5,13 +5,14 @@ open STM
 module Fine_list = MulticamlDS.Fine_list
 
 module FLConf = struct
-  type cmd = Add of int | Remove of int | Is_empty
+  type cmd = Add of int | Remove of int | Contains of int | Is_empty 
 
   (* possible operations *)
   let show_cmd c =
     match c with
     | Add i -> "Add " ^ string_of_int i
     | Remove i -> "Remove " ^ string_of_int i
+    | Contains i -> "Contains " ^ string_of_int i
     | Is_empty -> "Is_empty"
 
   (* model state and system state *)
@@ -25,6 +26,7 @@ module FLConf = struct
          [
            Gen.map (fun i -> Add i) int_gen;
            Gen.map (fun i -> Remove i) int_gen;
+           Gen.map (fun i -> Contains i) int_gen;
            Gen.return Is_empty;
          ])
 
@@ -52,6 +54,7 @@ module FLConf = struct
           | x :: ys -> if e = x then ys else x :: sortlist ys e
         in
         sortlist s i
+    | Contains _ -> s
     | Is_empty -> s
 
   let precond _ _ = true
@@ -60,12 +63,14 @@ module FLConf = struct
     match c with
     | Add i -> Res (bool, Fine_list.add d i)
     | Remove i -> Res (bool, Fine_list.remove d i)
+    | Contains i -> Res (bool, Fine_list.contains d i)
     | Is_empty -> Res (bool, Fine_list.is_empty d)
 
   let postcond c (s : state) res =
     match (c, res) with
     | Add ele, Res ((Bool, _), res) -> res = not (List.mem ele s)
     | Remove ele, Res ((Bool, _), res) -> res = List.mem ele s
+    | Contains ele, Res ((Bool, _), res) -> res = List.mem ele s
     | Is_empty, Res ((Bool, _), res) -> res = (s = [])
     | _, _ -> false
 end

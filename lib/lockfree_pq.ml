@@ -74,7 +74,7 @@ let compare_and_set_mark_ref (atomic, old_node, old_mark, node, mark) =
     the predecessors nodes with smaller key and successors nodes with greater than
     or equal to key
   *)
-let find_in (key, preds, succs, sl) =
+let find_in (key, preds, succs, sl, is_del) =
   let head = sl.head in
   let rec iterate (prev, curr, succ, mark, level) =
     if mark then (* need to delete curr if marked, so update prev next ptr to succ *)
@@ -86,9 +86,12 @@ let find_in (key, preds, succs, sl) =
         let { node = curr; marked = _ } = Atomic.get prev.next.(level) in
         let { node = succ; marked = mark } = Atomic.get curr.next.(level) in
         iterate (prev, curr, succ, mark, level)
-    else if curr.key <= key then (* keep traversing to get key greater than or equal *)
+    else if not is_del && curr.key <= key then (* keep traversing to get key greater than or equal *)
       let { node = new_succ; marked = mark } = Atomic.get succ.next.(level) in
       iterate (curr, succ, new_succ, mark, level)
+    else if is_del && curr.key < key then (* keep traversing to get key greater than or equal *)
+      let { node = new_succ; marked = mark } = Atomic.get succ.next.(level) in
+      iterate (curr, succ, new_succ, mark, level) 
     else (prev, curr)
   in
   (* find pred and succ at that level *)
@@ -105,37 +108,6 @@ let find_in (key, preds, succs, sl) =
   in
   update_arrays head sl.max_height
 
-let find_in_del (key, preds, succs, sl) =
-  let head = sl.head in
-  let rec iterate (prev, curr, succ, mark, level) =
-    if mark then (* need to delete curr if marked, so update prev next ptr to succ *)
-      let snip =
-        compare_and_set_mark_ref (prev.next.(level), curr, false, succ, false)
-      in
-      if not snip then raise Failed_snip
-      else
-        let { node = curr; marked = _ } = Atomic.get prev.next.(level) in
-        let { node = succ; marked = mark } = Atomic.get curr.next.(level) in
-        iterate (prev, curr, succ, mark, level)
-    else if curr.key < key then (* keep traversing to get key greater than or equal *)
-      let { node = new_succ; marked = mark } = Atomic.get succ.next.(level) in
-      iterate (curr, succ, new_succ, mark, level)
-    else (prev, curr)
-  in
-  (* find pred and succ at that level *)
-  let rec update_arrays prev level =
-    let { node = curr; marked = _ } = Atomic.get prev.next.(level) in
-    let { node = succ; marked = mark } = Atomic.get curr.next.(level) in
-    try
-      let prev, curr = iterate (prev, curr, succ, mark, level) in
-      (* prev < key <= curr *)
-      preds.(level) <- prev;
-      succs.(level) <- curr;
-      if level > 0 then update_arrays prev (level - 1) else curr.key == key
-    with Failed_snip -> update_arrays head sl.max_height
-  in
-  update_arrays head sl.max_height
-
 (** Adds a new key to the skiplist sl. *)
 let push sl key =
   let top_level = get_random_level sl in
@@ -143,7 +115,7 @@ let push sl key =
   let succs = create_dummy_node_array sl in
   let rec repeat () =
     (* check if key already exists and fill preds and succs *)
-    find_in (key, preds, succs, sl) |> ignore;
+    find_in (key, preds, succs, sl, false) |> ignore;
     let new_node_next = (* build next array based on succs *)
       Array.map
         (fun element ->
@@ -177,7 +149,7 @@ let push sl key =
               (pred.next.(level), succ, false, new_node, false)
           then ()
           else (
-            find_in (key, preds, succs, sl) |> ignore;
+            find_in (key, preds, succs, sl, false) |> ignore;
             set_next ())
         in
         set_next ();
@@ -233,7 +205,7 @@ let remove sl key =
   let preds = create_dummy_node_array sl in
   let succs = create_dummy_node_array sl in
   let rec repeat () = 
-    find_in_del (key, preds, succs, sl) |> ignore;
+    find_in (key, preds, succs, sl, true) |> ignore;
     let nodeToRemove = succs.(0) in (* expected node to remove based on given key *)
     let nodeHeight = nodeToRemove.height in
     let rec mark_levels succ level =
@@ -260,7 +232,7 @@ let remove sl key =
       in
       let { node = succ; marked = mark } = Atomic.get succs.(0).next.(0) in
       if iMarkedIt then ( (* update next links to remove marked node in all levels *)
-        find_in_del (key, preds, succs, sl) |> ignore;
+        find_in (key, preds, succs, sl, true) |> ignore;
         true)
       else if mark then repeat () (* some other thread deleted same key *)
       else update_bottom_level succ  (* retry because some update happened in between *)
