@@ -3,7 +3,7 @@
   structure queue t fHead: pointer to node t, Tail: pointer to node t, H lock: lock type, T lock: lock typeg
 *)
 
-type 'a node = Nil | Next of 'a option * 'a node ref
+type 'a node = Nil | Next of 'a * 'a node ref
 
 type 'a t = {
   mutable head : 'a node ref;
@@ -33,7 +33,7 @@ let init () =
 (* push element to tail of queue *)
 let push t value =
   let new_tail = ref Nil in
-  let new_node = Next (Some value, new_tail) in
+  let new_node = Next (value, new_tail) in
   Mutex.lock t.tail_lock;
   (* Ensures queue is not full *)
   while Atomic.get t.size = t.capacity do
@@ -84,6 +84,30 @@ let is_empty t =
 (* return element at head of queue *)
 let peek t =
   Mutex.lock t.head_lock;
-  let top = match !(t.head) with Nil -> None | Next (value, _) -> value in
+  let top =
+    match !(t.head) with Nil -> None | Next (value, _) -> Some value
+  in
   Mutex.unlock t.head_lock;
   top
+
+(* push with no blocking condition, for stm tests *)
+let unbounded_push t value =
+  let new_tail = ref Nil in
+  let new_node = Next (value, new_tail) in
+  Mutex.lock t.tail_lock;
+  t.tail := new_node;
+  t.tail <- new_tail;
+  Mutex.unlock t.tail_lock
+
+(* pop with no blocking condition, for stm tests *)
+let unbounded_pop t =
+  Mutex.lock t.head_lock;
+  let popped =
+    match !(t.head) with
+    | Nil -> None
+    | Next (value, next) ->
+        t.head <- next;
+        Some value
+  in
+  Mutex.unlock t.head_lock;
+  popped

@@ -101,16 +101,16 @@ let remove t value =
   let start = find_previous_remove t value in
   validate start start.next
 
-let contains t value = 
-  let rec validate prev cur = 
+let contains t value =
+  let rec validate prev cur =
     Mutex.lock prev.lock;
-    let is_tail = ref false in 
-    let to_find = 
-      match cur with 
-      | Some node -> node 
+    let is_tail = ref false in
+    let to_find =
+      match cur with
+      | Some node -> node
       | _ ->
-        is_tail := true;
-        create_node value None 
+          is_tail := true;
+          create_node value None
     in
     if !is_tail then (
       Mutex.unlock prev.lock;
@@ -120,23 +120,23 @@ let contains t value =
       let verify = find_previous_remove t value in
       let temp = verify.next in
       match temp with
-      | Some _ when temp == cur && prev == verify -> 
-        let res = (to_find.value = value) in 
-        Mutex.unlock prev.lock;
-        Mutex.unlock to_find.lock;
-        res
-      | None -> 
-        Mutex.unlock prev.lock; 
-        Mutex.unlock to_find.lock; 
-        false
+      | Some _ when temp == cur && prev == verify ->
+          let res = to_find.value = value in
+          Mutex.unlock prev.lock;
+          Mutex.unlock to_find.lock;
+          res
+      | None ->
+          Mutex.unlock prev.lock;
+          Mutex.unlock to_find.lock;
+          false
       | _ ->
-        Mutex.unlock prev.lock;
-        Mutex.unlock to_find.lock;
-        (* Domain.cpu_relax (); *)
-        let again = find_previous_remove t value in
-        validate again again.next)
+          Mutex.unlock prev.lock;
+          Mutex.unlock to_find.lock;
+          (* Domain.cpu_relax (); *)
+          let again = find_previous_remove t value in
+          validate again again.next)
   in
-  let start = find_previous_remove t value in 
+  let start = find_previous_remove t value in
   validate start start.next
 
 let is_empty t =

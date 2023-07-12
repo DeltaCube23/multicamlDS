@@ -38,9 +38,8 @@ let tests_sequential =
           let insert v = out := v :: !out in
 
           for _ = 1 to List.length lpush do
-            match Bounded_queue.pop queue with
-            | None -> assert false
-            | Some v -> insert v
+            let v = Bounded_queue.pop queue in
+            insert v
           done;
 
           (* Testing property *)
@@ -118,8 +117,9 @@ let tests_two_domains =
 
           (* As a domain always pushs before popping, all pops
              succeeds. so collect popped order *)
-          let popped1 = Domain.join domain1 |> List.map Option.get in
-          let popped2 = popped2 |> List.map Option.get in
+          let popped1 = Domain.join domain1 (*|> List.map Option.get*) in
+
+          (*let popped2 = popped2 |> List.map Option.get in *)
 
           (* Check 1 : no elements are missing (everyting is popped). *)
           let all_elt_in =

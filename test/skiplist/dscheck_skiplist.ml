@@ -1,4 +1,4 @@
-open Skiplist 
+open Skiplist
 
 let _two_mem () =
   Atomic.trace (fun () ->
@@ -28,7 +28,8 @@ let _two_add () =
       Atomic.spawn (fun () -> added2 := add sl 2);
 
       Atomic.final (fun () ->
-          Atomic.check (fun () -> !added1 && !added2 && contains sl 1 && contains sl 2)))
+          Atomic.check (fun () ->
+              !added1 && !added2 && contains sl 1 && contains sl 2)))
 
 let _two_add_same () =
   Atomic.trace (fun () ->

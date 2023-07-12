@@ -5,7 +5,7 @@ open STM
 module Fine_list = MulticamlDS.Fine_list
 
 module FLConf = struct
-  type cmd = Add of int | Remove of int | Contains of int | Is_empty 
+  type cmd = Add of int | Remove of int | Contains of int | Is_empty
 
   (* possible operations *)
   let show_cmd c =

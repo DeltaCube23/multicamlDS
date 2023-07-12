@@ -2,3 +2,10 @@
  (name qcheck_bounded_queue)
  (libraries multicamlDS qcheck qcheck-alcotest)
  (modules qcheck_bounded_queue))
+
+(test
+ (name stm_bounded_queue)
+ (modules stm_bounded_queue)
+ (libraries multicamlDS qcheck-stm.sequential qcheck-stm.domain)
+ (action
+  (run %{test} --verbose)))

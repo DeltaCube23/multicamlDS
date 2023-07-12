@@ -132,97 +132,92 @@ let tests_domains =
           let d1 =
             Domain.spawn (fun () ->
                 for i = 1 to len do
-                  if Skiplist.add queue (4 * i) then incr c1;
+                  if Skiplist.add queue (4 * i) then incr c1
                 done)
           in
           let d2 =
             Domain.spawn (fun () ->
                 for i = 1 to len do
-                  if Skiplist.add queue ((4 * i) + 1) then incr c2;
+                  if Skiplist.add queue ((4 * i) + 1) then incr c2
                 done)
           in
           let d3 =
             Domain.spawn (fun () ->
                 for i = 1 to len do
-                  if Skiplist.add queue ((4 * i) + 2) then incr c3;
+                  if Skiplist.add queue ((4 * i) + 2) then incr c3
                 done)
           in
           let d4 =
             Domain.spawn (fun () ->
                 for i = 1 to len do
-                  if Skiplist.add queue ((4 * i) + 3) then incr c4;
+                  if Skiplist.add queue ((4 * i) + 3) then incr c4
                 done)
           in
           Domain.join d1;
           Domain.join d2;
           Domain.join d3;
           Domain.join d4;
-          !c1 + !c2 + !c3 + !c4 = (4 *len));
+          !c1 + !c2 + !c3 + !c4 = 4 * len);
       (* TEST 4 - Same domain add remove *)
       Test.make ~count:100 ~name:"parallel_add_remove" small_nat (fun slen ->
-        assume (slen <> 0);
-        Random.self_init ();
-        (* Creating a queue *)
-        let queue = Skiplist.create ~max_height:20 () in
-        let len = Random.int 10000 + slen in 
-        let c1 = ref 0 in
-        let c2 = ref 0 in
-        let c3 = ref 0 in
-        let c4 = ref 0 in
-        let c5 = ref 0 in 
-        for i = 1 to len do 
-          if Skiplist.add queue (5 * i) then incr c5
-        done;
-        let d1 =
-          Domain.spawn (fun () ->
-              for i = 1 to len do
-                if Skiplist.add queue ((5 * i) + 4) then incr c1;
-                let num = Skiplist.find_mark_min queue in
-                if num <> Int.max_int then(
-                  if Skiplist.remove queue num then decr c1
-                )
-              done)
-        in
-        let d2 =
-          Domain.spawn (fun () ->
-              for i = 1 to len do
-                if Skiplist.add queue ((5 * i) + 1) then incr c2;
-                let num = Skiplist.find_mark_min queue in
-                if num <> Int.max_int then(
-                  if Skiplist.remove queue num then decr c2
-                )
-              done)
-        in
-        let d3 =
-          Domain.spawn (fun () ->
-              for i = len downto 1 do
-                if Skiplist.add queue ((5 * i) + 2) then incr c3;
-                let num = Skiplist.find_mark_min queue in
-                if num <> Int.max_int then(
-                  if Skiplist.remove queue num then decr c3
-                )
-              done)
-        in
-        let d4 =
-          Domain.spawn (fun () ->
-              for i = len downto 1 do
-                if Skiplist.add queue ((5 * i) + 3) then incr c4;
-                let num = Skiplist.find_mark_min queue in
-                if num <> Int.max_int then(
-                  if Skiplist.remove queue num then decr c4
-                )
-              done)
-        in
-        Domain.join d1;
-        Domain.join d2;
-        Domain.join d3;
-        Domain.join d4;
-        for _ = 1 to len do 
-          let num = Skiplist.find_mark_min queue in
-          if num <> Int.max_int then(
-            if Skiplist.remove queue num then decr c5)
-        done;
-        !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0 && !c5 = 0);
+          assume (slen <> 0);
+          Random.self_init ();
+          (* Creating a queue *)
+          let queue = Skiplist.create ~max_height:20 () in
+          let len = Random.int 10000 + slen in
+          let c1 = ref 0 in
+          let c2 = ref 0 in
+          let c3 = ref 0 in
+          let c4 = ref 0 in
+          let c5 = ref 0 in
+          for i = 1 to len do
+            if Skiplist.add queue (5 * i) then incr c5
+          done;
+          let d1 =
+            Domain.spawn (fun () ->
+                for i = 1 to len do
+                  if Skiplist.add queue ((5 * i) + 4) then incr c1;
+                  let num = Skiplist.find_mark_min queue in
+                  if num <> Int.max_int then
+                    if Skiplist.remove queue num then decr c1
+                done)
+          in
+          let d2 =
+            Domain.spawn (fun () ->
+                for i = 1 to len do
+                  if Skiplist.add queue ((5 * i) + 1) then incr c2;
+                  let num = Skiplist.find_mark_min queue in
+                  if num <> Int.max_int then
+                    if Skiplist.remove queue num then decr c2
+                done)
+          in
+          let d3 =
+            Domain.spawn (fun () ->
+                for i = len downto 1 do
+                  if Skiplist.add queue ((5 * i) + 2) then incr c3;
+                  let num = Skiplist.find_mark_min queue in
+                  if num <> Int.max_int then
+                    if Skiplist.remove queue num then decr c3
+                done)
+          in
+          let d4 =
+            Domain.spawn (fun () ->
+                for i = len downto 1 do
+                  if Skiplist.add queue ((5 * i) + 3) then incr c4;
+                  let num = Skiplist.find_mark_min queue in
+                  if num <> Int.max_int then
+                    if Skiplist.remove queue num then decr c4
+                done)
+          in
+          Domain.join d1;
+          Domain.join d2;
+          Domain.join d3;
+          Domain.join d4;
+          for _ = 1 to len do
+            let num = Skiplist.find_mark_min queue in
+            if num <> Int.max_int then if Skiplist.remove queue num then decr c5
+          done;
+          !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0 && !c5 = 0);
     ]
 
 let main () =
@@ -234,4 +229,5 @@ let main () =
       ("test_domains", to_alcotest tests_domains);
     ]
 ;;
+
 main ()

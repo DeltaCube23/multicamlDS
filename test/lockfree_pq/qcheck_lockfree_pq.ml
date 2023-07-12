@@ -18,7 +18,7 @@ let tests_sequential =
           while !count < len do
             incr count;
             let num = Lockfree_pq.pop queue in
-            insert num;
+            insert num
           done;
 
           (* Testing property *)
@@ -43,7 +43,7 @@ let tests_sequential =
           while !count < List.length !lpush do
             incr count;
             let num = Lockfree_pq.pop queue in
-            insert num;
+            insert num
           done;
 
           (* Testing property *)
@@ -81,7 +81,7 @@ let tests_domains =
           while !count < 2 * len do
             incr count;
             let num = Lockfree_pq.pop queue in
-            insert num;
+            insert num
           done;
           (* Testing property *)
           List.rev !out = List.sort compare (lpush1 @ lpush2));
@@ -100,14 +100,14 @@ let tests_domains =
           let consumer1 =
             Domain.spawn (fun () ->
                 while !c1 < len do
-                  let num = Lockfree_pq.pop queue in 
+                  let num = Lockfree_pq.pop queue in
                   if num <> Int.max_int then incr c1
                 done)
           in
           let consumer2 =
             Domain.spawn (fun () ->
                 while !c2 < len do
-                  let num = Lockfree_pq.pop queue in 
+                  let num = Lockfree_pq.pop queue in
                   if num <> Int.max_int then incr c2
                 done)
           in
@@ -116,66 +116,65 @@ let tests_domains =
           !c1 + !c2 = plen);
       (* TEST 3 - Same domain add remove *)
       Test.make ~count:100 ~name:"parallel_add_remove" small_nat (fun slen ->
-        assume (slen <> 0);
-        Random.self_init ();
-        (* Creating a queue *)
-        let queue = Lockfree_pq.create ~max_height:20 () in
-        let len = slen + 5000 in 
-        let c1 = ref 0 in
-        let c2 = ref 0 in
-        let c3 = ref 0 in
-        let c4 = ref 0 in
-        for _ = 1 to len do
-          let ele = Random.int 500 in 
-          Lockfree_pq.push queue ele |> ignore;
-        done;
-        let d1 =
-          Domain.spawn (fun () ->
-              for _ = 1 to len do
-                Lockfree_pq.push queue (Random.int 500);
-                incr c1;
-                let num = Lockfree_pq.pop queue in
-                if num <> Int.max_int then decr c1
-              done)
-        in
-        let d2 =
-          Domain.spawn (fun () ->
-              for _ = 1 to len do
-                Lockfree_pq.push queue (Random.int 500);
-                incr c2;
-                let num = Lockfree_pq.pop queue in
-                if num <> Int.max_int then decr c2
-              done)
-        in
-        let d3 =
-          Domain.spawn (fun () ->
-              for _ = len downto 1 do
-                Lockfree_pq.push queue (Random.int 500); 
-                incr c3;
-                let num = Lockfree_pq.pop queue in
-                if num <> Int.max_int then decr c3
-              done)
-        in
-        let d4 =
-          Domain.spawn (fun () ->
-              for _ = len downto 1 do
-                Lockfree_pq.push queue (Random.int 500);
-                incr c4;
-                let num = Lockfree_pq.pop queue in
-                if num <> Int.max_int then decr c4
-              done)
-        in
-        Domain.join d1;
-        Domain.join d2;
-        Domain.join d3;
-        Domain.join d4;
-        let c5 = ref len in 
-        for _ = 1 to len do
-          let num = Lockfree_pq.pop queue in
-          if num <> Int.max_int then decr c5
-          else Format.printf "%d\n%!" 42
-        done;
-        !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0 && !c5 = 0);
+          assume (slen <> 0);
+          Random.self_init ();
+          (* Creating a queue *)
+          let queue = Lockfree_pq.create ~max_height:20 () in
+          let len = slen + 5000 in
+          let c1 = ref 0 in
+          let c2 = ref 0 in
+          let c3 = ref 0 in
+          let c4 = ref 0 in
+          for _ = 1 to len do
+            let ele = Random.int 500 in
+            Lockfree_pq.push queue ele |> ignore
+          done;
+          let d1 =
+            Domain.spawn (fun () ->
+                for _ = 1 to len do
+                  Lockfree_pq.push queue (Random.int 500);
+                  incr c1;
+                  let num = Lockfree_pq.pop queue in
+                  if num <> Int.max_int then decr c1
+                done)
+          in
+          let d2 =
+            Domain.spawn (fun () ->
+                for _ = 1 to len do
+                  Lockfree_pq.push queue (Random.int 500);
+                  incr c2;
+                  let num = Lockfree_pq.pop queue in
+                  if num <> Int.max_int then decr c2
+                done)
+          in
+          let d3 =
+            Domain.spawn (fun () ->
+                for _ = len downto 1 do
+                  Lockfree_pq.push queue (Random.int 500);
+                  incr c3;
+                  let num = Lockfree_pq.pop queue in
+                  if num <> Int.max_int then decr c3
+                done)
+          in
+          let d4 =
+            Domain.spawn (fun () ->
+                for _ = len downto 1 do
+                  Lockfree_pq.push queue (Random.int 500);
+                  incr c4;
+                  let num = Lockfree_pq.pop queue in
+                  if num <> Int.max_int then decr c4
+                done)
+          in
+          Domain.join d1;
+          Domain.join d2;
+          Domain.join d3;
+          Domain.join d4;
+          let c5 = ref len in
+          for _ = 1 to len do
+            let num = Lockfree_pq.pop queue in
+            if num <> Int.max_int then decr c5 else Format.printf "%d\n%!" 42
+          done;
+          !c1 = 0 && !c2 = 0 && !c3 = 0 && !c4 = 0 && !c5 = 0);
     ]
 
 let main () =
@@ -187,4 +186,5 @@ let main () =
       ("test_domains", to_alcotest tests_domains);
     ]
 ;;
+
 main ()
